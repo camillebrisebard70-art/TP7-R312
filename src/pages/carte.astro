@@ -1,0 +1,131 @@
+---
+import Layout from "../layouts/Layout.astro";
+import populationMain from "../assets/populationMain.json";
+
+const listePeriode = [...new Set(populationMain.map((d) => d.Période))].reverse();
+const listeSexe = [...new Set(populationMain.map((d) => d.Sexe))];
+const ordreAge = [
+  "Total",
+  "Moins de 15 ans",
+  "Moins de 20 ans",
+  "De 15 à 24 ans",
+  "De 25 à 39 ans",
+  "De 40 à 54 ans",
+  "De 55 à 64 ans",
+  "De 65 à 79 ans",
+  "15 ans ou plus",
+  "65 ans ou plus",
+  "80 ans ou plus",
+];
+const listeAge = ordreAge.filter((a) =>
+  populationMain.some((d) => d["Âge"] === a)
+);
+
+const classSelect =
+  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200";
+const classLabel = "flex flex-col text-sm font-medium text-slate-700";
+---
+
+<Layout>
+  <h1 class="mb-1 text-3xl font-bold text-slate-900">
+    Population par département
+  </h1>
+  <p class="mb-6 text-slate-600">
+    Choisis une année, un sexe et une tranche d'âge pour mettre à jour la carte.
+  </p>
+
+  <section
+    aria-label="Filtres de la carte"
+    class="mb-6 grid gap-4 rounded-xl bg-white p-5 shadow sm:grid-cols-3"
+  >
+    <label for="periode" class={classLabel}>
+      Année
+      <select id="periode" class={classSelect}>
+        {listePeriode.map((p, i) => <option selected={i === 0}>{p}</option>)}
+      </select>
+    </label>
+
+    <label for="sexe" class={classLabel}>
+      Sexe
+      <select id="sexe" class={classSelect}>
+        {listeSexe.map((s) => <option selected={s === "Total"}>{s}</option>)}
+      </select>
+    </label>
+
+    <label for="age" class={classLabel}>
+      Âge
+      <select id="age" class={classSelect}>
+        {listeAge.map((a) => <option selected={a === "Total"}>{a}</option>)}
+      </select>
+    </label>
+  </section>
+
+  <section class="rounded-xl bg-white p-6 shadow">
+    <div id="carte" class="flex justify-center overflow-x-auto"></div>
+  </section>
+
+  <script>
+    import * as Plot from "@observablehq/plot";
+    import populationMain from "../assets/populationMain.json";
+    import departements from "../assets/departements.geojson.json";
+
+    const selectPeriode = document.getElementById("periode") as HTMLSelectElement;
+    const selectSexe = document.getElementById("sexe") as HTMLSelectElement;
+    const selectAge = document.getElementById("age") as HTMLSelectElement;
+    const conteneur = document.getElementById("carte")!;
+
+    function dessiner() {
+      const periode = Number(selectPeriode.value);
+      const sexe = selectSexe.value;
+      const age = selectAge.value;
+
+      const donnees = populationMain.filter(
+        (d) =>
+          d.Période === periode &&
+          d.Sexe === sexe &&
+          d["Âge"] === age &&
+          d["Statut d'emploi variable selon l'enquête"] === "Total" &&
+          d["Catégorie de population"] === "Total" &&
+          d["Statut conjugal"] === "Total"
+      );
+
+      const valeurParDept = new Map(donnees.map((d) => [d.Géographie, d.Valeur]));
+
+      const carte = Plot.plot({
+        width: 800,
+        style: { fontSize: "14px", background: "transparent" },
+        title: `Population par département (${periode})`,
+        subtitle: `Sexe : ${sexe} · Âge : ${age}`,
+        caption: "Source : INSEE, recensement de la population",
+        ariaLabel: `Carte de la population par département en France, ${periode}`,
+        ariaDescription:
+          "Carte choroplèthe : plus un département est foncé, plus sa population est élevée.",
+        projection: { type: "conic-conformal", domain: departements },
+        color: {
+          type: "quantile",
+          n: 5,
+          scheme: "blues",
+          legend: true,
+          label: "Habitants",
+          tickFormat: (d) => Math.round(d / 1000) + " k",
+        },
+        marks: [
+          Plot.geo(departements, {
+            fill: (d) => valeurParDept.get(d.properties.nom),
+            stroke: "white",
+            title: (d) =>
+              `${d.properties.nom} : ${valeurParDept.get(d.properties.nom) ?? "n/a"}`,
+            tip: true,
+          }),
+        ],
+      });
+
+      conteneur.replaceChildren(carte);
+    }
+
+    [selectPeriode, selectSexe, selectAge].forEach((s) =>
+      s.addEventListener("change", dessiner)
+    );
+    dessiner();
+  </script>
+</Layout>

@@ -1,26 +1,50 @@
 ---
 import "../styles/global.css";
+
+const path = Astro.url.pathname;
+const liens = [
+  { href: "/", label: "Accueil" },
+  { href: "/leaflet", label: "Établissements" },
+  { href: "/carte", label: "Population" },
+];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo-cam.png" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro Basics</title>
+    <title>TP7 - Camille Brisebard</title>
   </head>
-  <body>
-    <slot />
+  <body class="min-h-screen bg-slate-50 text-slate-800">
+    <header class="border-b border-slate-200 bg-white shadow-sm">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <a href="/" class="text-lg font-bold text-indigo-700">TP7 · Cartes</a>
+        <nav aria-label="Navigation principale" class="flex gap-2">
+          {
+            liens.map((l) => (
+              <a
+                href={l.href}
+                aria-current={path === l.href ? "page" : undefined}
+                class:list={[
+                  "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  path === l.href
+                    ? "bg-indigo-700 text-white"
+                    : "text-slate-700 hover:bg-slate-100",
+                ]}
+              >
+                {l.label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-6 py-8">
+      <slot />
+    </main>
   </body>
 </html>
-
-<style>
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-  }
-</style>
