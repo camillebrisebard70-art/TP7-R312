@@ -1,0 +1,27 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "leaflet/dist/leaflet.css";
+---
+
+<Layout>
+  <div id="map" style="height: 600px;"></div>
+
+  <script>
+    import listeEtablissements from "../assets/listeEtablissements.json";
+    import L from "leaflet";
+
+    const map = L.map("map").setView([46.6033, 1.883], 6);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    listeEtablissements.forEach((etab) => {
+      if (etab.lat && etab.lon) {
+        L.marker([etab.lat, etab.lon])
+          .addTo(map)
+          .bindPopup(etab.name ?? "Établissement");
+      }
+    });
+  </script>
+</Layout>
